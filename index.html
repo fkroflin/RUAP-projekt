@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="stylesheet" href="style.css">
+  <title>Wine Quality Predictor</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 30px;
+      background-color: #f9f9f9;
+    }
+    form {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 10px;
+      max-width: 600px;
+    }
+    input, button {
+      padding: 10px;
+      font-size: 1rem;
+    }
+    #result {
+      margin-top: 20px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<h1>Wine Quality Predictor</h1>
+  <form id="predictionForm">
+    <input type="number" step="any" name="volatile acidity" placeholder="Volatile Acidity" required>
+    <input type="number" step="any" name="citric acid" placeholder="Citric Acid" required>
+    <input type="number" step="any" name="residual sugar" placeholder="Residual Sugar" required>
+    <input type="number" step="any" name="free sulfur dioxide" placeholder="Free Sulfur Dioxide" required>
+    <input type="number" step="any" name="sulphates" placeholder="Sulphates" required>
+    <input type="number" step="any" name="alcohol" placeholder="Alcohol" required>
+    <button type="submit">Predict</button>
+  </form>
+
+  <div id="spinner">
+    <div class="loader"></div>
+    <p>Predicting...</p>
+  </div>
+
+  <div id="result"></div>
+
+  <script>
+    const form = document.getElementById("predictionForm");
+    const resultDiv = document.getElementById("result");
+    const spinner = document.getElementById("spinner");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      resultDiv.textContent = "";
+      spinner.style.display = "block";
+
+      const formData = new FormData(form);
+      const inputData = {};
+      formData.forEach((value, key) => {
+        inputData[key] = parseFloat(value);
+      });
+
+      const body = {
+        "Inputs": {
+          "input1": [inputData]
+        },
+        "GlobalParameters": {}
+      };
+
+      try {
+        const response = await fetch("http://localhost:5000/predict", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(body)
+        });
+
+
+        if (!response.ok) {
+          throw new Error(`Server responded with status ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log("Prediction response:", data);
+
+        const prediction = data?.Results?.WebServiceOutput0?.[0]?.WineQualityPrediction ?? "No result";
+        resultDiv.textContent = `Wine Quality: ${prediction.toFixed(2)}`;
+
+      } catch (err) {
+        console.error("Prediction error:", err);
+        resultDiv.textContent = `⚠️ Error: ${err.message}`;
+      } finally {
+        spinner.style.display = "none";
+      }
+    });
+  </script>
+</body>
+</html>
